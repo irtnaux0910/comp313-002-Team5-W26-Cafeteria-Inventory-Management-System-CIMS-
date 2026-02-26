@@ -2,38 +2,69 @@ import axios from "axios";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
+// Simple email validator
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
 function Login() {
   const navigate = useNavigate();
 
   const [data, setData] = useState({
     email: "",
-    password: ""
+    password: "",
   });
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    setError("");
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
+
+    const email = data.email.trim();
+    const password = data.password;
+
+    // Frontend validation
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        data
-      );
+      setLoading(true);
 
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+
+      // Save token
       localStorage.setItem("token", res.data.token);
 
-      // If backend doesn't return user, use this:
-      localStorage.setItem("user", JSON.stringify({ email: data.email }));
+      // Save user (use backend name if returned, else fallback)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          email,
+          name: res.data?.name || "User",
+        })
+      );
 
       navigate("/dashboard");
-
     } catch (err) {
-      setError("Invalid email or password");
+      const backendMsg =
+        err?.response?.data?.message || "Invalid email or password";
+      setError(backendMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,6 +80,7 @@ function Login() {
             name="email"
             type="email"
             placeholder="Email"
+            value={data.email}
             onChange={handleChange}
             required
           />
@@ -57,11 +89,14 @@ function Login() {
             name="password"
             type="password"
             placeholder="Password"
+            value={data.password}
             onChange={handleChange}
             required
           />
 
-          <button type="submit">Access Inventory</button>
+          <button type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Access Inventory"}
+          </button>
 
           <p style={{ marginTop: "10px" }}>
             Don't have an account? <Link to="/register">Register</Link>
