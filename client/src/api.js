@@ -1,19 +1,26 @@
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = "http://localhost:5000/api/auth";
 
-export const loginUser = async (credentials) => {
-    const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-    });
-    return response.json();
-};
+async function request(path, payload) {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-export const registerUser = async (userData) => {
-    const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-    });
-    return response.json();
-};
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    // ignore json parse errors
+  }
+
+  if (!res.ok || data?.success === false) {
+    // backend uses {success:false, message:"..."}
+    throw new Error(data?.message || "Something went wrong");
+  }
+
+  return data;
+}
+
+export const loginUser = (credentials) => request("/login", credentials);
+export const registerUser = (userData) => request("/register", userData);
