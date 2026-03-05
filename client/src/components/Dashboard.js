@@ -12,8 +12,27 @@ function Dashboard() {
   return (
     <div style={{ padding: "40px" }}>
       <h2>Dashboard</h2>
-      <p>Welcome, {user?.email}</p>
-      <button onClick={logout}>Logout</button>
+
+      <p>
+        Welcome, <strong>{user?.email || "User"}</strong>
+      </p>
+
+      <div style={{ marginTop: "25px", display: "flex", gap: "12px" }}>
+        <button onClick={() => navigate("/profile")}>
+          Go to Profile
+        </button>
+
+        <button onClick={() => navigate("/inventory")}>
+          Go to Inventory
+        </button>
+
+        <button
+          onClick={logout}
+          style={{ backgroundColor: "#ef4444", color: "white" }}
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 }
