@@ -3,31 +3,28 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UpdateStock from "./components/UpdateStock";
 import Navbar from "./components/Navbar";
 import "./App.css";
 
 function App() {
-  const isAuthenticated = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
   return (
     <>
       <Navbar />
 
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route
           path="/login"
-          element={
-            isAuthenticated ? <Navigate to="/dashboard" /> : <Login />
-          }
+          element={token ? <Navigate to="/dashboard" replace /> : <Login />}
         />
 
         <Route
           path="/register"
-          element={
-            isAuthenticated ? <Navigate to="/dashboard" /> : <Register />
-          }
+          element={token ? <Navigate to="/dashboard" replace /> : <Register />}
         />
 
         <Route
@@ -37,7 +34,17 @@ function App() {
               <Dashboard />
             </ProtectedRoute>
           }
+          
         />
+
+        <Route
+        path="/update-stock"
+        element={
+          <ProtectedRoute>
+            <UpdateStock />
+          </ProtectedRoute>
+  }
+/>
       </Routes>
     </>
   );

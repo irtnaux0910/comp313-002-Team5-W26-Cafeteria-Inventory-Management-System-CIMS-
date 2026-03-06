@@ -18,22 +18,25 @@ function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        data
-      );
+      const res = await axios.post("http://localhost:5000/api/auth/login", data);
 
-      localStorage.setItem("token", res.data.token);
+      const token = res.data?.token;
+      const user = res.data?.user;
 
-      // If backend doesn't return user, use this:
-      localStorage.setItem("user", JSON.stringify({ email: data.email }));
+      if (!token || !user) {
+        setError("Login failed. Missing token or user data.");
+        return;
+      }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       navigate("/dashboard");
-
     } catch (err) {
-      setError("Invalid email or password");
+      setError(err?.response?.data?.message || "Invalid email or password");
     }
   };
 
@@ -49,6 +52,7 @@ function Login() {
             name="email"
             type="email"
             placeholder="Email"
+            value={data.email}
             onChange={handleChange}
             required
           />
@@ -57,6 +61,7 @@ function Login() {
             name="password"
             type="password"
             placeholder="Password"
+            value={data.password}
             onChange={handleChange}
             required
           />
