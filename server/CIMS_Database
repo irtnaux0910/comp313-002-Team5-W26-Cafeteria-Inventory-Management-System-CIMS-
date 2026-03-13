@@ -1,0 +1,27 @@
+[
+{ "name": "Milk", "category": "Dairy", "qty": 12 },
+{ "name": "Cheese", "category": "Dairy", "qty": 6 },
+{ "name": "Butter", "category": "Dairy", "qty": 3 },
+
+{ "name": "Bread", "category": "Bakery", "qty": 5 },
+{ "name": "Bagels", "category": "Bakery", "qty": 2 },
+{ "name": "Croissants", "category": "Bakery", "qty": 0 },
+
+{ "name": "Chicken Breast", "category": "Meat", "qty": 8 },
+{ "name": "Ground Beef", "category": "Meat", "qty": 4 },
+{ "name": "Turkey Slices", "category": "Meat", "qty": 1 },
+
+{ "name": "Apples", "category": "Produce", "qty": 15 },
+{ "name": "Bananas", "category": "Produce", "qty": 10 },
+{ "name": "Lettuce", "category": "Produce", "qty": 3 },
+{ "name": "Tomatoes", "category": "Produce", "qty": 0 },
+
+{ "name": "Orange Juice", "category": "Beverages", "qty": 7 },
+{ "name": "Apple Juice", "category": "Beverages", "qty": 2 },
+{ "name": "Coffee Beans", "category": "Beverages", "qty": 20 },
+
+{ "name": "Rice", "category": "Dry Goods", "qty": 14 },
+{ "name": "Pasta", "category": "Dry Goods", "qty": 9 },
+{ "name": "Cereal", "category": "Dry Goods", "qty": 4 },
+{ "name": "Sugar", "category": "Dry Goods", "qty": 1 }
+]
