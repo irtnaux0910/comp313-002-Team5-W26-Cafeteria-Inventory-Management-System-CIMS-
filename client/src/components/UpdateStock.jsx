@@ -7,6 +7,8 @@ function UpdateStock() {
   const [newQty, setNewQty] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("default");
 
   const loadItems = async () => {
     try {
@@ -83,11 +85,40 @@ function UpdateStock() {
 
       setMsg(res.data.message || "Stock updated successfully");
       setNewQty("");
+
+      const updatedId = selectedId;
       await loadItems();
+      setSelectedId(updatedId);
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to update stock");
     }
   };
+
+  const filteredAndSortedItems = useMemo(() => {
+    let updatedItems = [...items];
+
+    if (search.trim()) {
+      updatedItems = updatedItems.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (sortBy === "name") {
+      updatedItems.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "quantity") {
+      updatedItems.sort((a, b) => a.quantity - b.quantity);
+    } else if (sortBy === "lowStock") {
+      updatedItems.sort((a, b) => {
+        const aLow = a.quantity <= a.reorderLevel ? 0 : 1;
+        const bLow = b.quantity <= b.reorderLevel ? 0 : 1;
+
+        if (aLow !== bLow) return aLow - bLow;
+        return a.quantity - b.quantity;
+      });
+    }
+
+    return updatedItems;
+  }, [items, search, sortBy]);
 
   return (
     <div className="page-shell">
@@ -96,9 +127,15 @@ function UpdateStock() {
       {msg && <p className="success">{msg}</p>}
       {err && <p className="error">{err}</p>}
 
-      <div className="glass-panel" style={{ padding: "24px", marginBottom: "24px", maxWidth: "500px" }}>
+      <div
+        className="glass-panel"
+        style={{ padding: "24px", marginBottom: "24px", maxWidth: "500px" }}
+      >
         <form onSubmit={handleSave}>
-          <label style={{ display: "block", marginBottom: "8px" }}>Select Item</label>
+          <label style={{ display: "block", marginBottom: "8px" }}>
+            Select Item
+          </label>
+
           <select
             value={selectedId}
             onChange={(e) => {
@@ -122,7 +159,17 @@ function UpdateStock() {
             ))}
           </select>
 
-          <label style={{ display: "block", marginBottom: "8px" }}>New Qty</label>
+          {selectedItem && (
+            <p style={{ marginBottom: "12px", opacity: 0.9 }}>
+              Current Qty: <strong>{selectedItem.quantity}</strong> | Reorder:{" "}
+              <strong>{selectedItem.reorderLevel ?? 5}</strong>
+            </p>
+          )}
+
+          <label style={{ display: "block", marginBottom: "8px" }}>
+            New Qty
+          </label>
+
           <input
             type="number"
             min="0"
@@ -159,7 +206,55 @@ function UpdateStock() {
           <span style={{ marginLeft: "6px" }}>Expired</span>
         </p>
 
-        {items.length === 0 ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "15px",
+            flexWrap: "wrap",
+            marginBottom: "16px",
+          }}
+        >
+          <div></div>
+
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              placeholder="Search by item name"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                minWidth: "220px",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.08)",
+                color: "#fff",
+              }}
+            />
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                minWidth: "180px",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.08)",
+                color: "#fff",
+              }}
+            >
+              <option value="default">Default</option>
+              <option value="name">Sort by Name</option>
+              <option value="quantity">Sort by Quantity</option>
+              <option value="lowStock">Low Stock First</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredAndSortedItems.length === 0 ? (
           <p>No items yet.</p>
         ) : (
           <div className="table-wrap">
@@ -176,7 +271,7 @@ function UpdateStock() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => {
+                {filteredAndSortedItems.map((item) => {
                   const label = getItemStatus(item.quantity, item.reorderLevel);
                   const isLow = label === "Low";
                   const isExpired = label === "Expired";

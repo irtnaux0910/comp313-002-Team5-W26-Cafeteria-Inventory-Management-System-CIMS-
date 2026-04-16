@@ -158,4 +158,28 @@ router.patch("/:id/status", authMiddleware, adminOnly, async (req, res) => {
   }
 });
 
+router.delete("/:id", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Order cleared successfully",
+    });
+  } catch (error) {
+    console.error("DELETE ORDER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to clear order",
+    });
+  }
+});
+
 module.exports = router;

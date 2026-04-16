@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/axiosClient";
 
 function Inventory() {
@@ -6,6 +6,8 @@ function Inventory() {
   const [myOrders, setMyOrders] = useState([]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("default");
 
   const [form, setForm] = useState({
     name: "",
@@ -143,6 +145,31 @@ function Inventory() {
     }
     return { color: "#ef4444", fontWeight: "bold" };
   };
+
+  const filteredAndSortedItems = useMemo(() => {
+    let updatedItems = [...items];
+
+    if (search.trim()) {
+      updatedItems = updatedItems.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (sortBy === "name") {
+      updatedItems.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "quantity") {
+      updatedItems.sort((a, b) => a.quantity - b.quantity);
+    } else if (sortBy === "lowStock") {
+      updatedItems.sort((a, b) => {
+        const aLow = a.quantity <= a.reorderLevel ? 0 : 1;
+        const bLow = b.quantity <= b.reorderLevel ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        return a.quantity - b.quantity;
+      });
+    }
+
+    return updatedItems;
+  }, [items, search, sortBy]);
 
   return (
     <div style={{ padding: "40px" }}>
@@ -316,7 +343,39 @@ function Inventory() {
           borderRadius: "10px",
         }}
       >
-        <h3>Items List</h3>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "15px",
+            flexWrap: "wrap",
+            marginBottom: "16px",
+          }}
+        >
+          <h3 style={{ margin: 0 }}>Items List</h3>
+
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              placeholder="Search by item name"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 0, minWidth: "220px" }}
+            />
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="default">Default</option>
+              <option value="name">Sort by Name</option>
+              <option value="quantity">Sort by Quantity</option>
+              <option value="lowStock">Low Stock First</option>
+            </select>
+          </div>
+        </div>
 
         <table width="100%" style={{ borderCollapse: "collapse" }}>
           <thead>
@@ -331,7 +390,7 @@ function Inventory() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => {
+            {filteredAndSortedItems.map((item) => {
               const status = getInventoryStatus(
                 item.quantity,
                 item.reorderLevel
@@ -370,6 +429,8 @@ const inputStyle = {
   padding: "8px",
   borderRadius: "5px",
   border: "none",
+  backgroundColor: "#4b5563",
+  color: "white",
 };
 
 const buttonStyle = {
@@ -387,6 +448,15 @@ const clearButtonStyle = {
   border: "none",
   borderRadius: "5px",
   cursor: "pointer",
+};
+
+const selectStyle = {
+  padding: "8px 12px",
+  borderRadius: "5px",
+  border: "none",
+  backgroundColor: "#4b5563",
+  color: "white",
+  minWidth: "180px",
 };
 
 export default Inventory;

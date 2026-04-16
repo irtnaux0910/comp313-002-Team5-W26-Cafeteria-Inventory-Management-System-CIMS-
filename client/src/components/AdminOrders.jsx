@@ -24,12 +24,40 @@ function AdminOrders() {
     try {
       setMsg("");
       setErr("");
+
       const res = await api.patch(`/orders/${id}/status`, { status });
       setMsg(res.data.message || "Order status updated successfully");
+
       await loadOrders();
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to update order status");
     }
+  };
+
+  const clearOrder = async (id) => {
+    try {
+      setMsg("");
+      setErr("");
+
+      const res = await api.delete(`/orders/${id}`);
+      setMsg(res.data.message || "Order cleared successfully");
+
+      setOrders((prev) => prev.filter((order) => order._id !== id));
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to clear order");
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    if (status === "approved") {
+      return { color: "#22c55e", fontWeight: "bold" };
+    }
+
+    if (status === "rejected") {
+      return { color: "#ef4444", fontWeight: "bold" };
+    }
+
+    return { color: "#fbbf24", fontWeight: "bold" };
   };
 
   return (
@@ -69,27 +97,75 @@ function AdminOrders() {
                       <td>{item.category || "-"}</td>
                       <td>{item.quantity ?? 0}</td>
                       <td>{item.supplier || "-"}</td>
-                      <td>{item.expiryDate ? String(item.expiryDate).slice(0, 10) : "-"}</td>
-                      <td>{order.status}</td>
+                      <td>
+                        {item.expiryDate
+                          ? String(item.expiryDate).slice(0, 10)
+                          : "-"}
+                      </td>
+                      <td>
+                        <span style={getStatusStyle(order.status)}>
+                          {order.status}
+                        </span>
+                      </td>
                       <td>
                         {order.createdAt
                           ? new Date(order.createdAt).toLocaleString()
                           : "-"}
                       </td>
                       <td>
-                        <div className="action-group">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                          }}
+                        >
                           <button
-                            className="secondary-btn"
                             onClick={() => updateStatus(order._id, "approved")}
+                            style={{
+                              padding: "8px 12px",
+                              backgroundColor: "#22c55e",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              fontWeight: "600",
+                            }}
                           >
                             Approve
                           </button>
+
                           <button
-                            className="danger-btn"
                             onClick={() => updateStatus(order._id, "rejected")}
+                            style={{
+                              padding: "8px 12px",
+                              backgroundColor: "#ef4444",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              fontWeight: "600",
+                            }}
                           >
                             Reject
                           </button>
+
+                          {order.status !== "pending" && (
+                            <button
+                              onClick={() => clearOrder(order._id)}
+                              style={{
+                                padding: "8px 12px",
+                                backgroundColor: "#6b7280",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
