@@ -1,67 +1,207 @@
 const router = require("express").Router();
 const User = require("../models/User");
-const auth = require("../middleware/authMiddleware");
+const { authMiddleware, adminOnly } = require("../middleware/authMiddleware");
 
-// Email validator
-const isValidEmail = (email) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
-
-// GET profile of logged-in user
-router.get("/me", auth, async (req, res) => {
+router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
-    return res.json({ success: true, user });
-  } catch (e) {
-    console.error("GET /users/me ERROR:", e);
-    return res.status(500).json({ success: false, message: "Server error" });
+
+    res.json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("GET MY PROFILE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load profile",
+    });
   }
 });
 
-// UPDATE profile (name + email)
-router.put("/me", auth, async (req, res) => {
+router.put("/me", authMiddleware, async (req, res) => {
   try {
-    let { name, email } = req.body;
+    const { name, email } = req.body;
 
-    name = String(name || "").trim();
-    email = String(email || "").trim();
-
-    if (!name || !email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Name and email are required" });
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
     }
 
-    if (!isValidEmail(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid email format" });
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
     }
 
-    // prevent using an email that belongs to someone else
-    const existing = await User.findOne({ email, _id: { $ne: req.user.id } });
-    if (existing) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email already in use" });
+    const trimmedEmail = String(email).trim();
+    const trimmedName = String(name).trim();
+
+    const existingUser = await User.findOne({
+      email: trimmedEmail,
+      _id: { $ne: req.user.id },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already in use",
+      });
     }
 
-    const updated = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { name, email },
-      { new: true }
+      {
+        name: trimmedName,
+        email: trimmedEmail,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
     ).select("-password");
 
-    return res.json({
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
       success: true,
-      user: updated,
-      message: "Profile updated",
+      message: "Profile updated successfully",
+      user: updatedUser,
     });
-  } catch (e) {
-    console.error("PUT /users/me ERROR:", e);
-    return res.status(500).json({ success: false, message: "Server error" });
+  } catch (error) {
+    console.error("UPDATE MY PROFILE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Update failed",
+    });
+  }
+});
+
+router.get("/", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const users = await User.find({}, "-password").sort({ name: 1 });
+
+    res.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error("GET USERS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load users",
+    });
+  }
+});
+
+router.patch("/:id/block", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot block your own account",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: "blocked" },
+      { new: true, select: "-password" }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User has been blocked",
+      user,
+    });
+  } catch (error) {
+    console.error("BLOCK USER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to block user",
+    });
+  }
+});
+
+router.patch("/:id/unblock", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: "active" },
+      { new: true, select: "-password" }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User has been unblocked",
+      user,
+    });
+  } catch (error) {
+    console.error("UNBLOCK USER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to unblock user",
+    });
+  }
+});
+
+router.delete("/:id", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own account",
+      });
+    }
+
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+    });
   }
 });
 

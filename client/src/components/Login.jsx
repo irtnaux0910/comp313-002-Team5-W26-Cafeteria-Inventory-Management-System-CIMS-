@@ -2,7 +2,6 @@ import axios from "axios";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
-// Simple email validator
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
 function Login() {
@@ -28,11 +27,11 @@ function Login() {
     const email = data.email.trim();
     const password = data.password;
 
-    // Frontend validation
     if (!isValidEmail(email)) {
       setError("Please enter a valid email.");
       return;
     }
+
     if (!password) {
       setError("Please enter your password.");
       return;
@@ -46,22 +45,24 @@ function Login() {
         password,
       });
 
-      // Save token
-      localStorage.setItem("token", res.data.token);
+      const token = res.data?.token;
+      const user = res.data?.user;
 
-      // Save user (use backend name if returned, else fallback)
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email,
-          name: res.data?.name || "User",
-        })
-      );
+      if (!token || !user) {
+        setError("Login failed. Missing token or user data.");
+        return;
+      }
 
-      navigate("/dashboard");
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      if (user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/user/dashboard");
+      }
     } catch (err) {
-      const backendMsg =
-        err?.response?.data?.message || "Invalid email or password";
+      const backendMsg = err?.response?.data?.message || "Invalid email or password";
       setError(backendMsg);
     } finally {
       setLoading(false);
@@ -70,9 +71,12 @@ function Login() {
 
   return (
     <div className="container">
-      <div className="card">
+      <div className="card" style={{ maxWidth: "460px", padding: "28px" }}>
         <form onSubmit={submit}>
-          <h2>CIMS Staff Login</h2>
+          <h2 style={{ marginBottom: "8px" }}>Login</h2>
+          <p style={{ marginBottom: "18px", opacity: 0.85 }}>
+            Sign in to access your dashboard
+          </p>
 
           {error && <p className="error">{error}</p>}
 
@@ -94,11 +98,11 @@ function Login() {
             required
           />
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Access Inventory"}
+          <button className="primary-btn" type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Login"}
           </button>
 
-          <p style={{ marginTop: "10px" }}>
+          <p style={{ marginTop: "12px" }}>
             Don't have an account? <Link to="/register">Register</Link>
           </p>
         </form>

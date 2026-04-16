@@ -5,8 +5,9 @@ function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const logout = () => {
-    localStorage.clear();
-    navigate("/login");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -14,15 +15,15 @@ function Dashboard() {
       <h2>Dashboard</h2>
 
       <p>
-        Welcome, <strong>{user?.email || "User"}</strong>
+        Welcome, <strong>{user?.name || user?.email || "User"}</strong>
       </p>
 
       <div style={{ marginTop: "25px", display: "flex", gap: "12px" }}>
-        <button onClick={() => navigate("/profile")}>
+        <button onClick={() => navigate("/user/profile")}>
           Go to Profile
         </button>
 
-        <button onClick={() => navigate("/inventory")}>
+        <button onClick={() => navigate("/user/inventory")}>
           Go to Inventory
         </button>
 

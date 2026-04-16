@@ -1,8 +1,7 @@
 const router = require("express").Router();
 const Item = require("../models/Item");
-const auth = require("../middleware/authMiddleware");
+const { authMiddleware } = require("../middleware/authMiddleware");
 
-// helper: expiry must be future if provided
 const isFutureDate = (dateString) => {
   if (!dateString) return true;
   const d = new Date(dateString);
@@ -15,8 +14,7 @@ const isFutureDate = (dateString) => {
   return d > today;
 };
 
-// CREATE item
-router.post("/", auth, async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
     const { name, category, quantity, expiryDate, supplier, reorderLevel } = req.body;
 
@@ -60,8 +58,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// READ all items
-router.get("/", auth, async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const items = await Item.find().sort({ createdAt: -1 });
     res.json({ success: true, items });
@@ -71,12 +68,10 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// UPDATE item
-router.put("/:id", auth, async (req, res) => {
+router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { name, category, quantity, expiryDate, supplier, reorderLevel } = req.body;
 
-    // optional validation if fields provided
     if (name !== undefined && !String(name).trim()) {
       return res.status(400).json({ success: false, message: "Item name cannot be empty" });
     }
@@ -112,7 +107,6 @@ router.put("/:id", auth, async (req, res) => {
     }
 
     if (expiryDate !== undefined) {
-      // allow clearing expiry date by sending ""
       updateDoc.expiryDate = expiryDate ? new Date(expiryDate) : undefined;
     }
 
@@ -132,8 +126,7 @@ router.put("/:id", auth, async (req, res) => {
   }
 });
 
-// DELETE item
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const deleted = await Item.findByIdAndDelete(req.params.id);
 
